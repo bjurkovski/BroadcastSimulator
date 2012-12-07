@@ -8,16 +8,22 @@ void PipelineSimulator::run() {
 	bool hasMessageToSend = true;
 	int round = 0;
 	while(hasMessageToSend) {
-		checkMessagePool(round);
-		swapBuffers();
-
 		cout << "** Round " << round << endl;
 		hasMessageToSend = false;
 		for(int i=0; i<numProcs; i++) {
+			Message toSend = checkMessagePool(i, round);
 			Message msgReceived = receive(i);
-			if(!msgReceived.isNull()) {
-				isSending[i] = msgReceived;
 
+			if(msgReceived.isNull()) {
+				if(!toSend.isNull() && isSending[i].isNull()) {
+					startSending(i, toSend);
+				}
+			}
+			else {
+				isSending[i] = msgReceived;
+			}
+
+			if(!isSending[i].isNull()) {
 				Message m = isSending[i];
 				if(msgDestinations[m.getId()].empty()) {
 					isSending[i].clear();
@@ -37,6 +43,7 @@ void PipelineSimulator::run() {
 			}
 		}
 		round++;
+		swapBuffers();
 	}
 }
 

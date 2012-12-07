@@ -5,12 +5,15 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <functional>
 
 class Message {
 	private:
 		int id;
 
 	public:
+		int sender;
+		int time;
 		char content;
 
 		Message() {
@@ -21,15 +24,22 @@ class Message {
 		Message(int id, char content) {
 			this->id = id;
 			this->content = content;
+			this->time = 0;
+			this->sender = -1;
 		}
 
 		int getId() {
 			return id;
 		}
 
+		int getTime() {
+			return time;
+		}
+
 		void clear() {
 			id = -1;
 			content = 0;
+			time = 0;
 		}
 
 		bool isNull() {
@@ -39,18 +49,37 @@ class Message {
 		}
 };
 
+struct CompMessages :
+public std::binary_function<Message, Message, bool> {
+	bool operator() (const Message m1, const Message m2) const {
+		if((m1.content == 'A') && (m2.content != 'A'))
+			return true;
+		else if((m1.content != 'A') && (m2.content == 'A'))
+			return false;
+		else if(m1.time == m2.time)
+			return m1.sender < m2.sender;
+		else
+			return m1.time < m2.time;
+	}
+};
+
+typedef std::priority_queue<Message, std::vector<Message>, CompMessages> MessageQueue;
+
 class BasicSimulator {
 	public:
 		BasicSimulator(std::string configFile);
 		void run();
 	protected:
 		int numProcs;
+		int numMessages;
 		std::vector< std::queue<int> > messagesPool;
-		void checkMessagePool(int round);
+		Message checkMessagePool(int proc, int round);
+		void startSending(int proc, Message m);
 
 		int currentBuffer;
 		std::vector<Message> isSending;
-		std::vector<Message> procBuffer[2];
+		std::vector<int> procClock;
+		std::vector<MessageQueue> procBuffer[2];
 		void swapBuffers();
 
 		std::map< int, std::queue<int> > msgDestinations;

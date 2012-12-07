@@ -45,53 +45,63 @@ BasicSimulator::BasicSimulator(string configFile) {
 	Message m;
 	for(int i=0; i<numProcs; i++) {
 		isSending.push_back(m);
+		procClock.push_back(0);
 		for(int j=0; j<2; j++)
-			procBuffer[j].push_back(m);
+			procBuffer[j].push_back(MessageQueue());
 	}
 	currentBuffer = 0;
+	this->numMessages = 0;
 }
 
-void BasicSimulator::checkMessagePool(int round) {
-	static int numMessages = 0;
-	for(int i=0; i<numProcs; i++) {
-		Message m = isSending[i];
-		if(msgDestinations[m.getId()].empty()) {
+Message BasicSimulator::checkMessagePool(int proc, int round) {
+	Message m = isSending[proc];
+	if(msgDestinations[m.getId()].empty()) {
+		isSending[proc].clear();
+	}
+
+	if((!messagesPool[proc].empty()) && (messagesPool[proc].front() <= round))
+		if(isSending[proc].isNull()) {
+		int msgId = numMessages;
+			//isSending[i] = Message(msgId, i+'0');
+			Message m = Message(msgId, proc+'0');
+			msgDestinations[msgId] = queue<int>();
+
+			for(int j=0; j<numProcs-1; j++) {
+				int p = (proc + j + 1) % numProcs;
+				msgDestinations[msgId].push(p);
+			}
+
+			return m;
+			/*
+			if(send(i, i, isSending[i])) {
+				messagesPool[i].pop();
+				numMessages++;
+			}
+			else {
 				isSending[i].clear();
 			}
+			*/
+		}
+	return Message();
+}
 
-		if((!messagesPool[i].empty()) && (messagesPool[i].front() <= round))
-			if(isSending[i].isNull()) {
-				int msgId = numMessages;
-				isSending[i] = Message(msgId, i+'0');
-				msgDestinations[msgId] = queue<int>();
-
-				for(int j=0; j<numProcs; j++) {
-					int p = (i + j) % numProcs;
-					if(p != i)
-						msgDestinations[msgId].push(p);
-				}
-
-				if(send(i, i, isSending[i])) {
-					messagesPool[i].pop();
-					numMessages++;
-				}
-				else {
-					isSending[i].clear();
-				}
-			}
-	}
+void BasicSimulator::startSending(int proc, Message m) {
+	isSending[proc] = m;
+	messagesPool[proc].pop();
+	numMessages++;
 }
 
 void BasicSimulator::run() {
 	bool hasMessageToSend = true;
 	int round = 0;
 	while(hasMessageToSend) {
-		checkMessagePool(round);
-		swapBuffers();
-
 		cout << "** Round " << round << endl;
 		hasMessageToSend = false;
 		for(int i=0; i<numProcs; i++) {
+			Message toSend = checkMessagePool(i, round);
+			if(!toSend.isNull() && isSending[i].isNull()) {
+				startSending(i, toSend);
+			}
 			receive(i);
 
 			if(!isSending[i].isNull()) {
@@ -111,30 +121,48 @@ void BasicSimulator::run() {
 				hasMessageToSend = true;
 		}
 		round++;
+		swapBuffers();
 	}
 }
 
 void BasicSimulator::swapBuffers() {
-	currentBuffer = (currentBuffer+1)%2;
+	int nextBuffer = (currentBuffer+1)%2;
+	for(int i=0; i<numProcs; i++) {
+		if(!procBuffer[currentBuffer][i].empty()) {
+			Message m = procBuffer[currentBuffer][i].top();
+			procBuffer[currentBuffer][i].pop();
+			procBuffer[nextBuffer][i].push(m);
+		}
+	}
+	currentBuffer = nextBuffer;
 }
 
 bool BasicSimulator::send(int sender, int receiver, Message message) {
+/*
 	if(!procBuffer[(currentBuffer+1)%2][receiver].isNull()) {
 		cout << "Process " << receiver << " buffer is full! Will lose '" << message.getId() << "' from process " << sender << endl;
 		return false;
 	}
+*/
 
-	procBuffer[(currentBuffer+1)%2][receiver] = message;
+	message.sender = sender;
+	message.time = procClock[sender];
+	procBuffer[(currentBuffer+1)%2][receiver].push(message);
+	for(int i=0; i<numProcs; i++)
+		procClock[i]++;
 	if(sender != receiver)
 		cout << "Process " << sender << " sent '" << message.getId() << "' to process " << receiver << endl;
 	return true;
 }
 
 Message BasicSimulator::receive(int receiver) {
-	Message m = procBuffer[currentBuffer][receiver];
-	procBuffer[currentBuffer][receiver] = Message();
-	if(!m.isNull()) {
-		cout << "Process " << receiver << " received '" << m.getId() << "'" << endl;
+	if(procBuffer[currentBuffer][receiver].empty()) {
+		return Message();
 	}
-	return m;
+	else {
+		Message m = procBuffer[currentBuffer][receiver].top();
+		procBuffer[currentBuffer][receiver].pop();
+		cout << "Process " << receiver << " received '" << m.getId() << "'" << endl;
+		return m;
+	}
 }
