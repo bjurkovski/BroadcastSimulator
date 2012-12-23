@@ -1,11 +1,11 @@
 #ifndef TREE_SIMULATOR_H
 #define TREE_SIMULATOR_H
 
-#include "basicSimulator.h"
+#include "broadcastSimulator.h"
 
-class TreeSimulator : public BasicSimulator {
+class TreeSimulator : public BroadcastSimulator {
 	public:
-		TreeSimulator(std::string configFile) : BasicSimulator(configFile) {
+		TreeSimulator() : BroadcastSimulator() {
 		}
 
 		void run();

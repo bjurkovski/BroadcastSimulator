@@ -1,11 +1,11 @@
 #ifndef PIPELINE_SIMULATOR_H
 #define PIPELINE_SIMULATOR_H
 
-#include "basicSimulator.h"
+#include "broadcastSimulator.h"
 
-class PipelineSimulator : public BasicSimulator {
+class PipelineSimulator : public BroadcastSimulator {
 	public:
-		PipelineSimulator(std::string configFile) : BasicSimulator(configFile) {
+		PipelineSimulator() : BroadcastSimulator() {
 		}
 
 		void run();

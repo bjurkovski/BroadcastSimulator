@@ -25,6 +25,7 @@ Message TO_TreeSimulator::receive(int receiver) {
 	else {
 		Message m = procBuffer[currentBuffer][receiver].top();
 		if(m.content == 'A') {
+			cout << "Process " << receiver << " received 'Ack_" << m.getId() << "'" << endl; //
 			remainingAcks[receiver][m.getId()]--;
 			return Message();
 		}
@@ -34,7 +35,8 @@ Message TO_TreeSimulator::receive(int receiver) {
 			cout << "Process " << receiver << " received '" << m.getId() << "'" << endl;
 			return m;
 		}
-		else {
+		else {	
+			cout << "Process " << receiver << " broadcasted an ack" << endl; //
 			m.content = 'A';
 			for(int i=0; i<numProcs; i++)
 				send(receiver, i, m);
