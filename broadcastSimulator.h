@@ -10,7 +10,7 @@
 class Message {
 	private:
 		int id;
-
+		int creator;
 	public:
 		int sender;
 		int time;
@@ -19,20 +19,26 @@ class Message {
 		Message() {
 			id = -1;
 			content = 0;
+			creator = -1;
 		}
 
-		Message(int id, char content) {
+		Message(int id, int creator, char content) {
 			this->id = id;
+			this->creator = creator;
 			this->content = content;
 			this->time = 0;
 			this->sender = -1;
 		}
 
-		int getId() {
+		int getId() const {
 			return id;
 		}
 
-		int getTime() {
+		int getCreator() const {
+			return creator;
+		}
+
+		int getTime() const {
 			return time;
 		}
 
@@ -47,19 +53,18 @@ class Message {
 				return true;
 			return false;
 		}
+
+		bool operator<(const Message& m) const {
+			if(time == m.time)
+				return creator < m.creator;
+			else return time < m.time;
+		}
 };
 
 struct CompMessages :
 public std::binary_function<Message, Message, bool> {
 	bool operator() (const Message m1, const Message m2) const {
-		if((m1.content == 'A') && (m2.content != 'A'))
-			return true;
-		else if((m1.content != 'A') && (m2.content == 'A'))
-			return false;
-		else if(m1.time == m2.time)
-			return m1.sender < m2.sender;
-		else
-			return m1.time < m2.time;
+		return m2 < m1;
 	}
 };
 
@@ -78,10 +83,11 @@ class BroadcastSimulator {
 		void startSending(int proc, Message m);
 
 		int currentBuffer;
-		std::vector<Message> isSending;
+		std::vector< std::queue<Message> > isSending;
 		std::vector<int> procClock;
 		std::vector<MessageQueue> procBuffer[2];
 		void swapBuffers();
+		virtual bool hasMessageToReceive();
 
 		std::map< int, std::queue<int> > msgDestinations;
 		virtual bool send(int sender, int receiver, Message message);

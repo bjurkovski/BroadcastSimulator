@@ -48,9 +48,9 @@ void BroadcastSimulator::initialize(string configFile) {
 	}
 	fclose(f);
 
-	Message m;
+	//Message m;
 	for(int i=0; i<numProcs; i++) {
-		isSending.push_back(m);
+		isSending.push_back(queue<Message>());
 		procClock.push_back(0);
 		for(int j=0; j<2; j++)
 			procBuffer[j].push_back(MessageQueue());
@@ -60,16 +60,21 @@ void BroadcastSimulator::initialize(string configFile) {
 }
 
 Message BroadcastSimulator::checkMessagePool(int proc, int round) {
-	Message m = isSending[proc];
-	if(msgDestinations[m.getId()].empty()) {
-		isSending[proc].clear();
-	}
+	//Message m = isSending[proc];
+	if(!isSending[proc].empty()) { //
+		Message m = isSending[proc].front();
+		if(msgDestinations[m.getId()].empty()) {
+			//isSending[proc].clear();
+			isSending[proc].pop();
+		}
+	} //
 
-	if((!messagesPool[proc].empty()) && (messagesPool[proc].front() <= round))
-		if(isSending[proc].isNull()) {
-		int msgId = numMessages;
+	if((!messagesPool[proc].empty()) && (messagesPool[proc].front() <= round)) {
+		//if(isSending[proc].isNull()) {
+		if(isSending[proc].empty()) {
+			int msgId = numMessages;
 			//isSending[i] = Message(msgId, i+'0');
-			Message m = Message(msgId, proc+'0');
+			Message m = Message(msgId, proc, proc+'0');
 			msgDestinations[msgId] = queue<int>();
 
 			for(int j=0; j<numProcs-1; j++) {
@@ -78,21 +83,13 @@ Message BroadcastSimulator::checkMessagePool(int proc, int round) {
 			}
 
 			return m;
-			/*
-			if(send(i, i, isSending[i])) {
-				messagesPool[i].pop();
-				numMessages++;
-			}
-			else {
-				isSending[i].clear();
-			}
-			*/
 		}
+	}
 	return Message();
 }
 
 void BroadcastSimulator::startSending(int proc, Message m) {
-	isSending[proc] = m;
+	isSending[proc].push(m);
 	messagesPool[proc].pop();
 	numMessages++;
 }
@@ -100,13 +97,21 @@ void BroadcastSimulator::startSending(int proc, Message m) {
 void BroadcastSimulator::swapBuffers() {
 	int nextBuffer = (currentBuffer+1)%2;
 	for(int i=0; i<numProcs; i++) {
-		if(!procBuffer[currentBuffer][i].empty()) {
+		while(!procBuffer[currentBuffer][i].empty()) {
 			Message m = procBuffer[currentBuffer][i].top();
 			procBuffer[currentBuffer][i].pop();
 			procBuffer[nextBuffer][i].push(m);
 		}
 	}
 	currentBuffer = nextBuffer;
+}
+
+bool BroadcastSimulator::hasMessageToReceive() {
+	for(int i=0; i<numProcs; i++) {
+		if(!(procBuffer[0][i].empty() && procBuffer[1][i].empty()))
+			return true;
+	}
+	return false;
 }
 
 bool BroadcastSimulator::send(int sender, int receiver, Message message) {

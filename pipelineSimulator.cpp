@@ -7,7 +7,7 @@ using namespace std;
 void PipelineSimulator::run() {
 	bool hasMessageToSend = true;
 	int round = 0;
-	while(hasMessageToSend) {
+	while(hasMessageToSend || hasMessageToReceive()) {
 		cout << "** Round " << round << endl;
 		hasMessageToSend = false;
 		for(int i=0; i<numProcs; i++) {
@@ -15,25 +15,31 @@ void PipelineSimulator::run() {
 			Message msgReceived = receive(i);
 
 			if(msgReceived.isNull()) {
-				if(!toSend.isNull() && isSending[i].isNull()) {
+				//if(!toSend.isNull() && isSending[i].isNull()) {
+				if(!toSend.isNull()) {
 					startSending(i, toSend);
 				}
 			}
 			else {
-				isSending[i] = msgReceived;
+				//isSending[i] = msgReceived;
+				isSending[i].push(msgReceived);
 			}
 
-			if(!isSending[i].isNull()) {
-				Message m = isSending[i];
+			//if(!isSending[i].isNull()) {
+			if(!isSending[i].empty()) {
+				//Message m = isSending[i];
+				Message m = isSending[i].front();
 				if(msgDestinations[m.getId()].empty()) {
-					isSending[i].clear();
+					//isSending[i].clear();
+					isSending[i].pop();
 				}
 				else {
 					hasMessageToSend = true;
 					int receiver = msgDestinations[m.getId()].front();
 					if(send(i, receiver, m)) {
 						msgDestinations[m.getId()].pop();
-						isSending[i].clear();
+						//isSending[i].clear();
+						isSending[i].pop();
 					}
 				}
 			}
