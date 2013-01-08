@@ -114,6 +114,17 @@ bool BroadcastSimulator::hasMessageToReceive() {
 	return false;
 }
 
+void BroadcastSimulator::run() {
+	bool running = true;
+	int round = 0;
+	while(running || hasMessageToReceive()) {
+		cout << "** Round " << round << endl;
+		running = this->broadcast(round);
+		round++;
+		swapBuffers();
+	}
+}
+
 bool BroadcastSimulator::send(int sender, int receiver, Message message) {
 /*
 	if(!procBuffer[(currentBuffer+1)%2][receiver].isNull()) {

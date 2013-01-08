@@ -74,7 +74,7 @@ class BroadcastSimulator {
 	public:
 		BroadcastSimulator() { }
 		void initialize(std::string configFile);
-		virtual void run() = 0;
+		void run();
 	protected:
 		int numProcs;
 		int numMessages;
@@ -92,6 +92,7 @@ class BroadcastSimulator {
 		std::map< int, std::queue<int> > msgDestinations;
 		virtual bool send(int sender, int receiver, Message message);
 		virtual Message receive(int receiver);
+		virtual bool broadcast(int round) = 0;
 };
 
 #endif

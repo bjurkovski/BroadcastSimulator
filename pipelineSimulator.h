@@ -7,8 +7,8 @@ class PipelineSimulator : public BroadcastSimulator {
 	public:
 		PipelineSimulator() : BroadcastSimulator() {
 		}
-
-		void run();
+	protected:
+		bool broadcast(int round);
 };
 
 #endif
