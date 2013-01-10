@@ -8,7 +8,7 @@ class TreeSimulator : public BroadcastSimulator {
 		TreeSimulator() : BroadcastSimulator() {
 		}
 	protected:
-		bool broadcast(int round);
+		bool broadcast();
 };
 
 #endif

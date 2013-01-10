@@ -23,6 +23,8 @@ void BroadcastSimulator::initialize(string configFile) {
 	procBuffer[1].clear();
 	isSending.clear();
 	msgDestinations.clear();
+	firstTimeSent.clear();
+	procsToReceive.clear();
 
 	int numMessages, messageTime;
 	FILE* f = fopen(configFile.c_str(), "r");
@@ -56,42 +58,38 @@ void BroadcastSimulator::initialize(string configFile) {
 			procBuffer[j].push_back(MessageQueue());
 	}
 	currentBuffer = 0;
-	this->numMessages = 0;
+	numMessages = 0;
 }
 
-Message BroadcastSimulator::checkMessagePool(int proc, int round) {
-	//Message m = isSending[proc];
-	if(!isSending[proc].empty()) { //
+bool BroadcastSimulator::messageInPool(int proc) {
+	if(!isSending[proc].empty()) { 
 		Message m = isSending[proc].front();
 		if(msgDestinations[m.getId()].empty()) {
-			//isSending[proc].clear();
 			isSending[proc].pop();
 		}
-	} //
+	} 
 
 	if((!messagesPool[proc].empty()) && (messagesPool[proc].front() <= round)) {
-		//if(isSending[proc].isNull()) {
-		if(isSending[proc].empty()) {
-			int msgId = numMessages;
-			//isSending[i] = Message(msgId, i+'0');
-			Message m = Message(msgId, proc, proc+'0');
-			msgDestinations[msgId] = queue<int>();
-
-			for(int j=0; j<numProcs-1; j++) {
-				int p = (proc + j + 1) % numProcs;
-				msgDestinations[msgId].push(p);
-			}
-
-			return m;
-		}
+		return true;
 	}
-	return Message();
+	return false;
 }
 
-void BroadcastSimulator::startSending(int proc, Message m) {
-	isSending[proc].push(m);
-	messagesPool[proc].pop();
-	numMessages++;
+void BroadcastSimulator::sendNewMessage(int proc) {
+	if(messageInPool(proc)) {
+		int msgId = numMessages;
+		Message m = Message(msgId, proc, proc+'0');
+
+		msgDestinations[msgId] = queue<int>();
+		for(int j=0; j<numProcs-1; j++) {
+			int p = (proc + j + 1) % numProcs;
+			msgDestinations[msgId].push(p);
+		}
+
+		isSending[proc].push(m);
+		messagesPool[proc].pop();
+		numMessages++;
+	}
 }
 
 void BroadcastSimulator::swapBuffers() {
@@ -116,13 +114,14 @@ bool BroadcastSimulator::hasMessageToReceive() {
 
 void BroadcastSimulator::run() {
 	bool running = true;
-	int round = 0;
+	round = 0;
 	while(running || hasMessageToReceive()) {
 		cout << "** Round " << round << endl;
-		running = this->broadcast(round);
+		running = this->broadcast();
 		round++;
 		swapBuffers();
 	}
+	cout << "Avg throughput: " << (double)numMessages/round << endl;
 }
 
 bool BroadcastSimulator::send(int sender, int receiver, Message message) {
@@ -136,8 +135,14 @@ bool BroadcastSimulator::send(int sender, int receiver, Message message) {
 	message.sender = sender;
 	message.time = procClock[sender];
 	procBuffer[(currentBuffer+1)%2][receiver].push(message);
+
+	if((int)msgDestinations[message.getId()].size() == numProcs - 1)
+		firstTimeSent[message.getId()] = round;
+	procsToReceive[message.getId()]++;
+
 	for(int i=0; i<numProcs; i++)
 		procClock[i]++;
+
 	if(sender != receiver)
 		cout << "Process " << sender << " sent '" << message.getId() << "' to process " << receiver << endl;
 	return true;
@@ -151,6 +156,10 @@ Message BroadcastSimulator::receive(int receiver) {
 		Message m = procBuffer[currentBuffer][receiver].top();
 		procBuffer[currentBuffer][receiver].pop();
 		cout << "Process " << receiver << " received '" << m.getId() << "'" << endl;
+		procsToReceive[m.getId()]--;
+		if((procsToReceive[m.getId()]==0) && (msgDestinations[m.getId()].size()==0)) {
+			cout << ">> '" << m.getId() << "' was broadcasted! Latency was " << round-firstTimeSent[m.getId()] << endl;
+		}
 		return m;
 	}
 }

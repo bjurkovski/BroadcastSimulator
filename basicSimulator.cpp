@@ -3,19 +3,16 @@
 
 using namespace std;
 
-bool BasicSimulator::broadcast(int round) {
+bool BasicSimulator::broadcast() {
 	bool hasMessageToSend = false;
 	for(int i=0; i<numProcs; i++) {
-		Message toSend = checkMessagePool(i, round);
-		//if(!toSend.isNull() && isSending[i].isNull()) {
-		if(!toSend.isNull()) {
-			startSending(i, toSend);
+		bool msgInPool = messageInPool(i);
+		if(msgInPool) {
+			sendNewMessage(i);
 		}
 		receive(i);
 
-		//if(!isSending[i].isNull()) {
 		if(!isSending[i].empty()) {
-			//Message m = isSending[i];
 			Message m = isSending[i].front();
 			if(!msgDestinations[m.getId()].empty()) {
 				hasMessageToSend = true;
@@ -23,7 +20,6 @@ bool BasicSimulator::broadcast(int round) {
 				if(send(i, receiver, m)) {
 					msgDestinations[m.getId()].pop();
 					if(msgDestinations[m.getId()].empty())
-						//isSending[i].clear();
 						isSending[i].pop();
 				}
 			}

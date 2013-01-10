@@ -5,70 +5,7 @@
 #include <vector>
 #include <string>
 #include <map>
-#include <functional>
-
-class Message {
-	private:
-		int id;
-		int creator;
-	public:
-		int sender;
-		int time;
-		char content;
-
-		Message() {
-			id = -1;
-			content = 0;
-			creator = -1;
-		}
-
-		Message(int id, int creator, char content) {
-			this->id = id;
-			this->creator = creator;
-			this->content = content;
-			this->time = 0;
-			this->sender = -1;
-		}
-
-		int getId() const {
-			return id;
-		}
-
-		int getCreator() const {
-			return creator;
-		}
-
-		int getTime() const {
-			return time;
-		}
-
-		void clear() {
-			id = -1;
-			content = 0;
-			time = 0;
-		}
-
-		bool isNull() {
-			if(id == -1)
-				return true;
-			return false;
-		}
-
-		bool operator<(const Message& m) const {
-			if(time == m.time)
-				return creator < m.creator;
-			else return time < m.time;
-		}
-};
-
-struct CompMessages :
-public std::binary_function<Message, Message, bool> {
-	bool operator() (const Message m1, const Message m2) const {
-		return m2 < m1;
-	}
-};
-
-typedef std::priority_queue<Message, std::vector<Message>, CompMessages> MessageQueue;
+#include "message.h"
 
 class BroadcastSimulator {
 	public:
@@ -76,23 +13,52 @@ class BroadcastSimulator {
 		void initialize(std::string configFile);
 		void run();
 	protected:
+		// Number of processes and messages in the system, and current round
 		int numProcs;
 		int numMessages;
-		std::vector< std::queue<int> > messagesPool;
-		Message checkMessagePool(int proc, int round);
-		void startSending(int proc, Message m);
+		int round;
 
+		// One queue per process representing the rounds in which a new
+		// message is available (according to the configuration file)
+		std::vector< std::queue<int> > messagesPool;
+		// Method to check if there's a new message available for
+		// this round in the pool
+		bool messageInPool(int proc);
+		// Puts the first message of the pool in the process' send queue
+		// and fills a list of destinations waiting for this message
+		void sendNewMessage(int proc);
+
+		// Each process has two buffers to receive a message: one to
+		// represent the current buffer and one of future messages
+		// (that will be available only at the end of the round)
 		int currentBuffer;
-		std::vector< std::queue<Message> > isSending;
-		std::vector<int> procClock;
 		std::vector<MessageQueue> procBuffer[2];
+		// This method needs to be called at the end of every round,
+		// so messages sent on the current round will be available for
+		// the corresponding processes in the next one
 		void swapBuffers();
+
+		// Each process has a queue of messages to be sent
+		std::vector< std::queue<Message> > isSending;
+		// Logical clock per process
+		std::vector<int> procClock;
+		// Check if there's at least one process with a message in the buffer
 		virtual bool hasMessageToReceive();
 
-		std::map< int, std::queue<int> > msgDestinations;
+		// First time (round) a message M was sent, stored to measure latency
+		std::map<int, int> firstTimeSent;
+		// Number of processes that still need to receive a message M:
+		// used to know when I message was sucessfully broadcasted
+		std::map<int, int> procsToReceive;
+		// Queue of processes to which a message M still needs to be sent
+		std::map<int, std::queue<int> > msgDestinations;
+
+		// Network abstractions
 		virtual bool send(int sender, int receiver, Message message);
 		virtual Message receive(int receiver);
-		virtual bool broadcast(int round) = 0;
+		// Abstract method called by the run() method:
+		// contains the implementation of the broadcast protocol
+		virtual bool broadcast() = 0;
 };
 
 #endif

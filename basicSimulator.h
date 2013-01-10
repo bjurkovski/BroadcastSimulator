@@ -8,7 +8,7 @@ class BasicSimulator : public BroadcastSimulator {
 		BasicSimulator() {
 		}
 	protected:
-		bool broadcast(int round);
+		bool broadcast();
 };
 
 #endif

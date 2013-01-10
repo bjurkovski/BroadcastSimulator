@@ -4,29 +4,22 @@
 
 using namespace std;
 
-bool PipelineSimulator::broadcast(int round) {
+bool PipelineSimulator::broadcast() {
 	bool hasMessageToSend = false;
 	for(int i=0; i<numProcs; i++) {
-		Message toSend = checkMessagePool(i, round);
+		bool msgInPool = messageInPool(i);
 		Message msgReceived = receive(i);
 
-		if(msgReceived.isNull()) {
-			//if(!toSend.isNull() && isSending[i].isNull()) {
-			if(!toSend.isNull()) {
-				startSending(i, toSend);
-			}
+		if(msgReceived.isNull() && msgInPool) {
+			sendNewMessage(i);
 		}
-		else {
-			//isSending[i] = msgReceived;
+		else if(!msgReceived.isNull()) {
 			isSending[i].push(msgReceived);
 		}
 
-		//if(!isSending[i].isNull()) {
 		if(!isSending[i].empty()) {
-			//Message m = isSending[i];
 			Message m = isSending[i].front();
 			if(msgDestinations[m.getId()].empty()) {
-				//isSending[i].clear();
 				isSending[i].pop();
 			}
 			else {
@@ -34,7 +27,6 @@ bool PipelineSimulator::broadcast(int round) {
 				int receiver = msgDestinations[m.getId()].front();
 				if(send(i, receiver, m)) {
 					msgDestinations[m.getId()].pop();
-					//isSending[i].clear();
 					isSending[i].pop();
 				}
 			}
