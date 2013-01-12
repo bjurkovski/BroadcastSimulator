@@ -1,10 +1,10 @@
-#include "totalOrderTreeSimulator.h"
+#include "totalOrderLSimulator.h"
 #include <queue>
 #include <iostream>
 
 using namespace std;
 
-bool TO_TreeSimulator::hasMessageToReceive() {
+bool TotalOrderLSimulator::hasMessageToReceive() {
 	if(TreeSimulator::hasMessageToReceive())
 		return true;
 
@@ -15,7 +15,7 @@ bool TO_TreeSimulator::hasMessageToReceive() {
 	return false;
 }
 
-bool TO_TreeSimulator::send(int sender, int receiver, Message message) {
+bool TotalOrderLSimulator::send(int sender, int receiver, Message message) {
 	if(sentMsg[sender]) {
 		return false;
 	}
@@ -52,7 +52,7 @@ bool TO_TreeSimulator::send(int sender, int receiver, Message message) {
 	}
 }
 
-Message TO_TreeSimulator::receive(int receiver) {
+Message TotalOrderLSimulator::receive(int receiver) {
 	if(!waitingForAcks[receiver].empty()) {
 		Message mAcks = waitingForAcks[receiver].top();
 		cout << "Process " << receiver << " has a message(" << mAcks.getId() << ") waiting for " << remainingAcks[receiver][mAcks.getId()] << " acks" << endl;

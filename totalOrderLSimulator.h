@@ -1,11 +1,11 @@
-#ifndef TO_TREE_SIMULATOR_H
-#define TO_TREE_SIMULATOR_H
+#ifndef TOTAL_ORDER_L_SIMULATOR_H
+#define TOTAL_ORDER_L_SIMULATOR_H
 
 #include "treeSimulator.h"
 
-class TO_TreeSimulator : public TreeSimulator {
+class TotalOrderLSimulator : public TreeSimulator {
 	public:
-		TO_TreeSimulator() : TreeSimulator() {
+		TotalOrderLSimulator() : TreeSimulator() {
 		}
 
 		void initialize(std::string configFile) {
