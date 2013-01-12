@@ -1,30 +1,33 @@
-#include "broadcastSimulator.h"
-#include "basicSimulator.h"
-#include "treeSimulator.h"
-#include "pipelineSimulator.h"
-#include "totalOrderLSimulator.h"
+#include "broadcastSimulator.hpp"
+#include "totalOrderBroadcastSimulator.hpp"
 #include <cstdio>
 #include <cstring>
 
 void runSimulator(char* simType, char* input) {
 	printf("%s Broadcast '%s'\n", simType, input);
 	if(strcmp(simType, "Basic") == 0) {
-		BasicSimulator sim;
+		//BasicSimulator sim;
+		BroadcastSimulator<BasicPolicy> sim;
 		sim.initialize(input);
 		sim.run();
 	}
 	else if(strcmp(simType, "Tree") == 0) {
-		TreeSimulator sim;
+		BroadcastSimulator<TreePolicy> sim;
 		sim.initialize(input);
 		sim.run();
 	}
 	else if(strcmp(simType, "Pipeline") == 0) {
-		PipelineSimulator sim;
+		BroadcastSimulator<PipelinePolicy> sim;
 		sim.initialize(input);
 		sim.run();
 	}
 	else if(strcmp(simType, "TotalOrderL") == 0) {
-		TotalOrderLSimulator sim;
+		TotalOrderBroadcastSimulator<TreePolicy> sim;
+		sim.initialize(input);
+		sim.run();
+	}
+	else if(strcmp(simType, "TotalOrderT") == 0) {
+		TotalOrderBroadcastSimulator<BasicPolicy> sim;
 		sim.initialize(input);
 		sim.run();
 	}
