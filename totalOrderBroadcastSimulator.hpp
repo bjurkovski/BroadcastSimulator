@@ -127,7 +127,7 @@ Message TotalOrderBroadcastSimulator<BroadcastPolicy>::receive(int receiver) {
 		this->procClock[receiver] = this->procClock[receiver] < m.time ? m.time + 1 : this->procClock[receiver];
 
 		if(m.content == 'A') {
-			cout << "Process " << receiver << " received 'ack " << m.getId() << "' from " << m.sender << " [time " << m.time << "]" << endl; //
+			cout << "Process " << receiver << " received 'ack " << m.getId() << "' from " << m.sender << " [time " << m.time << "]" << endl; 
 			this->procBuffer[this->currentBuffer][receiver].pop();
 			remainingAcks[receiver][m.getId()]--;
 
@@ -137,8 +137,11 @@ Message TotalOrderBroadcastSimulator<BroadcastPolicy>::receive(int receiver) {
 		else {
 			this->procBuffer[this->currentBuffer][receiver].pop(); 
 			remainingAcks[receiver][m.getId()]--; 
-
-			this->isSending[receiver].push(m); // NEW NEW NEW, testing! - to implement tree
+			
+			// Process that receives a message (even if it hasn't been delivered yet)
+			// gains the right to help broadcasting it to other processes (this makes
+			// it possible to implement the Tree and Pipeline protocols)
+			this->isSending[receiver].push(m);
 			cout << "Process " << receiver << " broadcasted 'ack " << m.getId() << "' [time " << m.time << "]" << endl; 
 			m.content = 'A';
 			for(int i=0; i<this->numProcs; i++) {
@@ -180,7 +183,7 @@ Message TotalOrderBroadcastSimulator<BroadcastPolicy>::getReadyMessage(int recei
 
 			this->procsToReceive[mAcks.getId()]--;
 			if((this->procsToReceive[mAcks.getId()]==0) && (this->msgDestinations[mAcks.getId()].size()==0)) {
-				cout << ">> '" << mAcks.getId() << "' was broadcasted! Latency was " << this->round - this->firstTimeSent[mAcks.getId()] << endl;
+				cout << ">> '" << mAcks.getId() << "' was broadcasted! Latency was " << this->round - this->firstTimeSent[mAcks.getId()] << "." << endl;
 			}
 
 			return mAcks;

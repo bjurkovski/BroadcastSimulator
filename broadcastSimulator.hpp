@@ -111,7 +111,7 @@ void BroadcastSimulator<BroadcastPolicy>::initialize(string configFile) {
 	procsToReceive.clear();
 
 	int numMessages, messageTime;
-	FILE* f = fopen(configFile.c_str(), "r");
+	FILE* f = fopen(("input/" + configFile) .c_str(), "r");
 	fscanf(f, "%d", &numProcs);
 	for(int i=0; i<numProcs; i++) {
 		fscanf(f, "%d", &numMessages);
@@ -298,7 +298,7 @@ Message BroadcastSimulator<BroadcastPolicy>::receive(int receiver) {
 		cout << "Process " << receiver << " received '" << m.getId() << "'" << endl;
 		procsToReceive[m.getId()]--;
 		if((procsToReceive[m.getId()]==0) && (msgDestinations[m.getId()].size()==0)) {
-			cout << ">> '" << m.getId() << "' was broadcasted! Latency was " << round-firstTimeSent[m.getId()] << endl;
+			cout << ">> '" << m.getId() << "' was broadcasted! Latency was " << round - firstTimeSent[m.getId()] << "." << endl;
 		}
 		return m;
 	}
