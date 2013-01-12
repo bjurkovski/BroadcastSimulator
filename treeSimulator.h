@@ -8,6 +8,7 @@ class TreeSimulator : public BroadcastSimulator {
 		TreeSimulator() : BroadcastSimulator() {
 		}
 	protected:
+		void sendNewMessage(int proc);
 		bool broadcast();
 };
 

@@ -64,7 +64,8 @@ void BroadcastSimulator::initialize(string configFile) {
 bool BroadcastSimulator::messageInPool(int proc) {
 	if(!isSending[proc].empty()) { 
 		Message m = isSending[proc].front();
-		if(msgDestinations[m.getId()].empty()) {
+		//if(msgDestinations[m.getId()].empty()) {
+		if(!hasNextDestination(proc, m.getId())) {
 			isSending[proc].pop();
 		}
 	} 
@@ -80,10 +81,10 @@ void BroadcastSimulator::sendNewMessage(int proc) {
 		int msgId = numMessages;
 		Message m = Message(msgId, proc, proc+'0');
 
-		msgDestinations[msgId] = queue<int>();
+		msgDestinations[msgId] = queue< pair<int, int> >();
 		for(int j=0; j<numProcs-1; j++) {
 			int p = (proc + j + 1) % numProcs;
-			msgDestinations[msgId].push(p);
+			msgDestinations[msgId].push(make_pair(p, -1));
 		}
 
 		isSending[proc].push(m);
@@ -124,14 +125,50 @@ void BroadcastSimulator::run() {
 	cout << "Avg throughput: " << (double)numMessages/round << endl;
 }
 
-bool BroadcastSimulator::send(int sender, int receiver, Message message) {
-/*
-	if(!procBuffer[(currentBuffer+1)%2][receiver].isNull()) {
-		cout << "Process " << receiver << " buffer is full! Will lose '" << message.getId() << "' from process " << sender << endl;
-		return false;
+bool BroadcastSimulator::hasNextDestination(int proc, int messageId) {
+	bool hasDest = false;
+	queue< pair<int, int> > tmp;
+	while(!msgDestinations[messageId].empty()) {
+		pair<int, int> p = msgDestinations[messageId].front();
+		if((p.second == proc) || (p.second == -1))
+			hasDest = true;
+		tmp.push(p);
+		msgDestinations[messageId].pop();
 	}
-*/
+	msgDestinations[messageId] = tmp;
+	return hasDest;
+}
 
+int BroadcastSimulator::getNextDestination(int proc, int messageId) {
+		if(msgDestinations[messageId].empty())
+			return -1;
+		else {
+			int nextDest = -1;
+			queue< pair<int, int> > tmp;
+			while(!msgDestinations[messageId].empty()) {
+				pair<int, int> p = msgDestinations[messageId].front();
+				if((nextDest==-1) && ((p.second == proc) || (p.second == -1)))
+					nextDest = p.first;
+				tmp.push(p);
+				msgDestinations[messageId].pop();
+			}
+			msgDestinations[messageId] = tmp;
+			return nextDest;
+		}
+}
+
+void BroadcastSimulator::removeDestination(int messageId, int dest) {
+	queue< pair<int, int> > tmp;
+	while(!msgDestinations[messageId].empty()) {
+		pair<int, int> p = msgDestinations[messageId].front();
+		if(p.first != dest)
+			tmp.push(p);
+		msgDestinations[messageId].pop();
+	}
+	msgDestinations[messageId] = tmp;
+}
+
+bool BroadcastSimulator::send(int sender, int receiver, Message message) {
 	message.sender = sender;
 	message.time = procClock[sender];
 	procBuffer[(currentBuffer+1)%2][receiver].push(message);

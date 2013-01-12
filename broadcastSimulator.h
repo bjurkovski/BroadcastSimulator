@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <utility>
 #include "message.h"
 
 class BroadcastSimulator {
@@ -26,7 +27,7 @@ class BroadcastSimulator {
 		bool messageInPool(int proc);
 		// Puts the first message of the pool in the process' send queue
 		// and fills a list of destinations waiting for this message
-		void sendNewMessage(int proc);
+		virtual void sendNewMessage(int proc);
 
 		// Each process has two buffers to receive a message: one to
 		// represent the current buffer and one of future messages
@@ -51,7 +52,14 @@ class BroadcastSimulator {
 		// used to know when I message was sucessfully broadcasted
 		std::map<int, int> procsToReceive;
 		// Queue of processes to which a message M still needs to be sent
-		std::map<int, std::queue<int> > msgDestinations;
+		// - First element of the pair in the queue is the process which 
+		// still needs to receive the message
+		// - Second element of the pair is the process which is supposed
+		// to send the message (or -1 if it doesn't matter who sends)
+		std::map<int, std::queue< std::pair<int, int> > > msgDestinations;
+		bool hasNextDestination(int proc, int messageId);
+		int getNextDestination(int proc, int messageId);
+		void removeDestination(int messageId, int dest);
 
 		// Network abstractions
 		virtual bool send(int sender, int receiver, Message message);

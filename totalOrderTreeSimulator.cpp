@@ -29,14 +29,19 @@ bool TO_TreeSimulator::send(int sender, int receiver, Message message) {
 			message.time = procClock[sender];
 			procBuffer[(currentBuffer+1)%2][receiver].push(message);
 			procClock[sender]++;
+
+			if((int)msgDestinations[message.getId()].size() == numProcs - 1) {
+				firstTimeSent[message.getId()] = round;
+				// The first time we increment this to signalize the sender
+				// also has to deliver this message
+				procsToReceive[message.getId()]++; 
+			}
+			procsToReceive[message.getId()]++; 
+
 			for(int i=0; i<numProcs; i++) {
-				//if(i == sender)
 				if(remainingAcks[i][message.getId()] == 0) {
 					remainingAcks[i][message.getId()] = numProcs - 1; // Proc receives its own ack 'for free'
-					//cout << "remainingAcks[" << i << "][" << message.getId() << "] == " << remainingAcks[i][message.getId()] << endl;
 				}
-				//else
-				//	remainingAcks[i][message.getId()] = numProcs - 2; // Proc also receives the message sender's ack 'for free'
 			}
 
 			if(sender != receiver)
@@ -55,6 +60,12 @@ Message TO_TreeSimulator::receive(int receiver) {
 			cout << "Process " << receiver << " received '" << mAcks.getId() << "'" << endl;
 			waitingForAcks[receiver].pop();
 			procClock[receiver] = procClock[receiver] < mAcks.time ? mAcks.time + 1 : procClock[receiver];
+
+			procsToReceive[mAcks.getId()]--;
+			if((procsToReceive[mAcks.getId()]==0) && (msgDestinations[mAcks.getId()].size()==0)) {
+				cout << ">> '" << mAcks.getId() << "' was broadcasted! Latency was " << round-firstTimeSent[mAcks.getId()]     << endl;
+			}
+
 			return mAcks;
 		}
 	}
@@ -95,6 +106,7 @@ Message TO_TreeSimulator::receive(int receiver) {
 			remainingAcks[receiver][m.getId()]--; //
 			//m.time = procClock[receiver]; //
 
+			isSending[receiver].push(m); // NEW NEW NEW, testing! - to implement tree
 			cout << "Process " << receiver << " broadcasted 'ack " << m.getId() << "' [time " << m.time << "]" << endl; //
 			m.content = 'A';
 			for(int i=0; i<numProcs; i++) {
@@ -107,6 +119,12 @@ Message TO_TreeSimulator::receive(int receiver) {
 				&& (waitingForAcks[receiver].empty() || (m < waitingForAcks[receiver].top()))
 			  ){
 				cout << "Process " << receiver << " received '" << m.getId() << "'" << endl;
+
+				procsToReceive[m.getId()]--;
+				if((procsToReceive[m.getId()]==0) && (msgDestinations[m.getId()].size()==0)) {
+					cout << ">> '" << m.getId() << "' was broadcasted! Latency was " << round-firstTimeSent[m.getId()]     << endl;
+				}
+
 				MessageQueue bkp;
 				while(!waitingForAcks[receiver].empty()) {
 					Message msg = waitingForAcks[receiver].top();

@@ -14,12 +14,16 @@ bool BasicSimulator::broadcast() {
 
 		if(!isSending[i].empty()) {
 			Message m = isSending[i].front();
-			if(!msgDestinations[m.getId()].empty()) {
+			//if(!msgDestinations[m.getId()].empty()) {
+			if(hasNextDestination(i, m.getId())) {
 				hasMessageToSend = true;
-				int receiver = msgDestinations[m.getId()].front();
+				//int receiver = msgDestinations[m.getId()].front();
+				int receiver = getNextDestination(i, m.getId());
 				if(send(i, receiver, m)) {
-					msgDestinations[m.getId()].pop();
-					if(msgDestinations[m.getId()].empty())
+					//msgDestinations[m.getId()].pop();
+					removeDestination(m.getId(), receiver);
+					//if(msgDestinations[m.getId()].empty())
+					if(!hasNextDestination(i, m.getId()))
 						isSending[i].pop();
 				}
 			}
