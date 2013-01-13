@@ -5,32 +5,35 @@
 
 void runSimulator(char* simType, char* input) {
 	printf("%s Broadcast '%s'\n", simType, input);
+	SimulationLog log;
 	if(strcmp(simType, "Basic") == 0) {
 		//BasicSimulator sim;
 		BroadcastSimulator<BasicPolicy> sim;
 		sim.initialize(input);
-		sim.run();
+		log = sim.run();
 	}
 	else if(strcmp(simType, "Tree") == 0) {
 		BroadcastSimulator<TreePolicy> sim;
 		sim.initialize(input);
-		sim.run();
+		log = sim.run();
 	}
 	else if(strcmp(simType, "Pipeline") == 0) {
 		BroadcastSimulator<PipelinePolicy> sim;
 		sim.initialize(input);
-		sim.run();
+		log = sim.run();
 	}
 	else if(strcmp(simType, "TotalOrderL") == 0) {
 		TotalOrderBroadcastSimulator<TreePolicy> sim;
 		sim.initialize(input);
-		sim.run();
+		log = sim.run();
 	}
 	else if(strcmp(simType, "TotalOrderT") == 0) {
 		TotalOrderBroadcastSimulator<BasicPolicy> sim;
 		sim.initialize(input);
-		sim.run();
+		log = sim.run();
 	}
+	string path = string(simType) + "_" + string(input) + ".msc";
+	log.dumpMsc(path);
 }
 
 int main() {

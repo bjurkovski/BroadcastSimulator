@@ -1,5 +1,5 @@
-#ifndef TOTAL_ORDER_BROADCAST_SIMULATOR_H
-#define TOTAL_ORDER_BROADCAST_SIMULATOR_H
+#ifndef TOTAL_ORDER_BROADCAST_SIMULATOR_HPP
+#define TOTAL_ORDER_BROADCAST_SIMULATOR_HPP
 
 #include "broadcastSimulator.hpp"
 
@@ -85,10 +85,12 @@ bool TotalOrderBroadcastSimulator<BroadcastPolicy>::send(int sender, int receive
 
 		if(message.content == 'A') {
 			this->procBuffer[(this->currentBuffer+1)%2][receiver].push(message);
+			this->log.storeSend(message, receiver);
 		}
 		else {
 			message.time = this->procClock[sender];
 			this->procBuffer[(this->currentBuffer+1)%2][receiver].push(message);
+			this->log.storeSend(message, receiver);
 			this->procClock[sender]++;
 
 			if((int)this->msgDestinations[message.getId()].size() == this->numProcs - 1) {
@@ -101,7 +103,8 @@ bool TotalOrderBroadcastSimulator<BroadcastPolicy>::send(int sender, int receive
 
 			for(int i=0; i<this->numProcs; i++) {
 				if(remainingAcks[i][message.getId()] == 0) {
-					remainingAcks[i][message.getId()] = this->numProcs - 1; // Proc receives its own ack 'for free'
+					// Proc receives its own ack 'for free', that's why the -1
+					remainingAcks[i][message.getId()] = this->numProcs - 1;
 				}
 			}
 
@@ -124,6 +127,7 @@ Message TotalOrderBroadcastSimulator<BroadcastPolicy>::receive(int receiver) {
 	else {
 		sentMsg[receiver] = false;
 		Message m = this->procBuffer[this->currentBuffer][receiver].top();
+		this->log.storeReceive(m, receiver);
 		this->procClock[receiver] = this->procClock[receiver] < m.time ? m.time + 1 : this->procClock[receiver];
 
 		if(m.content == 'A') {
@@ -183,7 +187,8 @@ Message TotalOrderBroadcastSimulator<BroadcastPolicy>::getReadyMessage(int recei
 
 			this->procsToReceive[mAcks.getId()]--;
 			if((this->procsToReceive[mAcks.getId()]==0) && (this->msgDestinations[mAcks.getId()].size()==0)) {
-				cout << ">> '" << mAcks.getId() << "' was broadcasted! Latency was " << this->round - this->firstTimeSent[mAcks.getId()] << "." << endl;
+				this->msgLatencies[mAcks.getId()] = this->round - this->firstTimeSent[mAcks.getId()];
+				cout << ">> '" << mAcks.getId() << "' was broadcasted! Latency was " << this->msgLatencies[mAcks.getId()] << "." << endl;
 			}
 
 			return mAcks;

@@ -1,5 +1,5 @@
-#ifndef BROADCAST_SIMULATOR_H
-#define BROADCAST_SIMULATOR_H
+#ifndef BROADCAST_SIMULATOR_HPP
+#define BROADCAST_SIMULATOR_HPP
 
 #include <queue>
 #include <vector>
@@ -11,6 +11,7 @@
 #include <cstdlib>
 
 #include "message.h"
+#include "simulationLog.h"
 #include "basicPolicy.hpp"
 #include "treePolicy.hpp"
 #include "pipelinePolicy.hpp"
@@ -32,16 +33,17 @@ class BroadcastSimulator : public BroadcastPolicy {
 	public:
 		BroadcastSimulator() { }
 		void initialize(std::string configFile);
-		void run();
+		SimulationLog run();
 	protected:
 		// Number of processes and messages in the system, and current round
 		int numProcs;
 		int numMessages;
 		int round;
+		SimulationLog log;
 
 		// Method meant to be called at the beginning of each round,
 		// to set everything up and update the processes state
-		virtual void initializeRound(); //v
+		virtual void initializeRound(); 
 		// One queue per process representing the rounds in which a new
 		// message is available (according to the configuration file)
 		std::vector< std::queue<int> > messagesPool;
@@ -50,7 +52,7 @@ class BroadcastSimulator : public BroadcastPolicy {
 		bool messageInPool(int proc);
 		// Puts the first message of the pool in the process' send queue
 		// and fills a list of destinations waiting for this message
-		void sendNewMessage(int proc); //v
+		void sendNewMessage(int proc); 
 
 		// Each process has two buffers to receive a message: one to
 		// represent the current buffer and one of future messages
@@ -67,10 +69,12 @@ class BroadcastSimulator : public BroadcastPolicy {
 		// Logical clock per process
 		std::vector<int> procClock;
 		// Check if there's at least one process with a message in the buffer
-		virtual bool hasMessageToReceive(); //v
+		virtual bool hasMessageToReceive(); 
 
-		// First time (round) a message M was sent, stored to measure latency
-		std::map<int, int> firstTimeSent;
+		// For each message sent, the round in which it was first sent (stored to measure latency)
+		std::vector<int> firstTimeSent;
+		// For each message sent, the time it took to be received
+		std::vector<int> msgLatencies;
 		// Number of processes that still need to receive a message M:
 		// used to know when I message was sucessfully broadcasted
 		std::map<int, int> procsToReceive;
@@ -85,8 +89,8 @@ class BroadcastSimulator : public BroadcastPolicy {
 		void removeDestination(int messageId, int dest);
 
 		// Network abstractions
-		virtual bool send(int sender, int receiver, Message message); //v
-		virtual Message receive(int receiver); //v
+		virtual bool send(int sender, int receiver, Message message); 
+		virtual Message receive(int receiver); 
 };
 
 using namespace std;
@@ -108,6 +112,7 @@ void BroadcastSimulator<BroadcastPolicy>::initialize(string configFile) {
 	isSending.clear();
 	msgDestinations.clear();
 	firstTimeSent.clear();
+	msgLatencies.clear();
 	procsToReceive.clear();
 
 	int numMessages, messageTime;
@@ -146,18 +151,27 @@ void BroadcastSimulator<BroadcastPolicy>::initialize(string configFile) {
 }
 
 template <class BroadcastPolicy>
-void BroadcastSimulator<BroadcastPolicy>::run() {
+SimulationLog BroadcastSimulator<BroadcastPolicy>::run() {
 	bool running = true;
+	log.initialize(numProcs);
 	numMessages = 0;
 	round = 0;
 	while(running || hasMessageToReceive()) {
 		std::cout << "** Round " << round << std::endl;
+		log.newRound();
 		initializeRound();
 		running = BroadcastPolicy::broadcast(*this);
 		round++;
 		swapBuffers();
 	}
-	std::cout << "Avg throughput: " << (double)numMessages/round << std::endl;
+
+	int sumLatencies = 0;
+	for(int i=0; i<(int)msgLatencies.size(); i++) {
+		sumLatencies += msgLatencies[i];
+	}
+	cout << "Avg throughput: " << (double)numMessages/round << endl;
+	cout << "Avg latency: " << (double)sumLatencies/msgLatencies.size() << endl;
+	return log;
 }
 
 template <class BroadcastPolicy>
@@ -196,6 +210,8 @@ void BroadcastSimulator<BroadcastPolicy>::sendNewMessage(int proc) {
 		msgDestinations[msgId] = BroadcastPolicy::generateMsgDestinations(*this, proc);
 
 		isSending[proc].push(m);
+		firstTimeSent.push_back(0);
+		msgLatencies.push_back(0);
 		messagesPool[proc].pop();
 		numMessages++;
 	}
@@ -274,6 +290,7 @@ bool BroadcastSimulator<BroadcastPolicy>::send(int sender, int receiver, Message
 	message.sender = sender;
 	message.time = procClock[sender];
 	procBuffer[(currentBuffer+1)%2][receiver].push(message);
+	log.storeSend(message, receiver);
 
 	if((int)msgDestinations[message.getId()].size() == numProcs - 1)
 		firstTimeSent[message.getId()] = round;
@@ -295,10 +312,12 @@ Message BroadcastSimulator<BroadcastPolicy>::receive(int receiver) {
 	else {
 		Message m = procBuffer[currentBuffer][receiver].top();
 		procBuffer[currentBuffer][receiver].pop();
+		log.storeReceive(m, receiver);
 		cout << "Process " << receiver << " received '" << m.getId() << "'" << endl;
 		procsToReceive[m.getId()]--;
 		if((procsToReceive[m.getId()]==0) && (msgDestinations[m.getId()].size()==0)) {
-			cout << ">> '" << m.getId() << "' was broadcasted! Latency was " << round - firstTimeSent[m.getId()] << "." << endl;
+			msgLatencies[m.getId()] = round - firstTimeSent[m.getId()];
+			cout << ">> '" << m.getId() << "' was broadcasted! Latency was " << msgLatencies[m.getId()] << "." << endl;
 		}
 		return m;
 	}
