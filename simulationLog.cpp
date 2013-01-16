@@ -27,6 +27,27 @@ void SimulationLog::storeReceive(Message m, int receiver) {
 	roundLog[currentRound][receiver].msgReceived = m;
 }
 
+void SimulationLog::storeDeliver(Message m, int receiver) {
+	int currentRound = roundLog.size()-1;
+	roundLog[currentRound][receiver].msgDelivered = m;
+}
+
+void SimulationLog::setAvgLatency(double lat) {
+	avgLatency = lat;
+}
+
+void SimulationLog::setAvgThroughput(double throughput) {
+	avgThroughput = throughput;
+}
+
+double SimulationLog::getAvgLatency() {
+	return avgLatency;
+}
+
+double SimulationLog::getAvgThroughput() {
+	return avgThroughput;
+}
+
 void SimulationLog::dumpMsc(string path) {
 	FILE* f = fopen(path.c_str(), "w");
 	fprintf(f, "msc {\n");

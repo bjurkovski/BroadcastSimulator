@@ -136,7 +136,9 @@ Message TotalOrderBroadcastSimulator<BroadcastPolicy>::receive(int receiver) {
 			remainingAcks[receiver][m.getId()]--;
 
 			updateWaitingForAcksList(receiver, m);
-			return getReadyMessage(receiver); 
+			Message msgToReturn = getReadyMessage(receiver);
+			this->log.storeDeliver(msgToReturn, receiver);
+			return msgToReturn;
 		}
 		else {
 			this->procBuffer[this->currentBuffer][receiver].pop(); 
@@ -155,7 +157,9 @@ Message TotalOrderBroadcastSimulator<BroadcastPolicy>::receive(int receiver) {
 			sentMsg[receiver] = true;
 
 			updateWaitingForAcksList(receiver, m); 
-			return getReadyMessage(receiver); 
+			Message msgToReturn = getReadyMessage(receiver); 
+			this->log.storeDeliver(msgToReturn, receiver);
+			return msgToReturn;
 		}
 	}
 }

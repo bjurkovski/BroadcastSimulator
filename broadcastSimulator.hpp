@@ -165,12 +165,17 @@ SimulationLog BroadcastSimulator<BroadcastPolicy>::run() {
 		swapBuffers();
 	}
 
+	// Compute measures:
 	int sumLatencies = 0;
 	for(int i=0; i<(int)msgLatencies.size(); i++) {
 		sumLatencies += msgLatencies[i];
 	}
-	cout << "Avg throughput: " << (double)numMessages/round << endl;
-	cout << "Avg latency: " << (double)sumLatencies/msgLatencies.size() << endl;
+	
+	log.setAvgThroughput((double)numMessages/round);
+	log.setAvgLatency((double)sumLatencies/msgLatencies.size());
+	
+	cout << "Avg throughput: " << log.getAvgThroughput() << endl;
+	cout << "Avg latency: " << log.getAvgLatency() << endl;
 	return log;
 }
 
@@ -313,6 +318,7 @@ Message BroadcastSimulator<BroadcastPolicy>::receive(int receiver) {
 		Message m = procBuffer[currentBuffer][receiver].top();
 		procBuffer[currentBuffer][receiver].pop();
 		log.storeReceive(m, receiver);
+		log.storeDeliver(m, receiver);
 		cout << "Process " << receiver << " received '" << m.getId() << "'" << endl;
 		procsToReceive[m.getId()]--;
 		if((procsToReceive[m.getId()]==0) && (msgDestinations[m.getId()].size()==0)) {

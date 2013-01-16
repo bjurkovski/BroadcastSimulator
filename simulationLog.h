@@ -13,6 +13,7 @@ class ProcRoundLog {
 		// by this process and their destination
 		std::vector< std::pair<Message, int> > msgSent;
 		Message msgReceived;
+		Message msgDelivered;
 };
 
 class SimulationLog {
@@ -22,10 +23,17 @@ class SimulationLog {
 		void newRound();
 		void storeSend(Message m, int receiver);
 		void storeReceive(Message m, int receiver);
+		void storeDeliver(Message m, int receiver);
+		void setAvgLatency(double lat);
+		void setAvgThroughput(double throughput);
+		double getAvgLatency();
+		double getAvgThroughput();
 		void dumpMsc(std::string path);
 
 	protected:
 		int numProcs;
+		double avgLatency;
+		double avgThroughput;
 		std::vector< std::vector<ProcRoundLog> > roundLog;
 };
 
