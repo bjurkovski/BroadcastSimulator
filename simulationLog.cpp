@@ -36,12 +36,20 @@ void SimulationLog::setAvgLatency(double lat) {
 	avgLatency = lat;
 }
 
+void SimulationLog::setStdDevLatency(double stdDev) {
+	stdDevLatency = stdDev;
+}
+
 void SimulationLog::setAvgThroughput(double throughput) {
 	avgThroughput = throughput;
 }
 
 double SimulationLog::getAvgLatency() {
 	return avgLatency;
+}
+
+double SimulationLog::getStdDevLatency() {
+	return stdDevLatency;
 }
 
 double SimulationLog::getAvgThroughput() {

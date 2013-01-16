@@ -25,14 +25,17 @@ class SimulationLog {
 		void storeReceive(Message m, int receiver);
 		void storeDeliver(Message m, int receiver);
 		void setAvgLatency(double lat);
+		void setStdDevLatency(double stdDev);
 		void setAvgThroughput(double throughput);
 		double getAvgLatency();
+		double getStdDevLatency();
 		double getAvgThroughput();
 		void dumpMsc(std::string path);
 
 	protected:
 		int numProcs;
 		double avgLatency;
+		double stdDevLatency;
 		double avgThroughput;
 		std::vector< std::vector<ProcRoundLog> > roundLog;
 };

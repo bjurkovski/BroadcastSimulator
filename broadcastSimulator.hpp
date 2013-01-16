@@ -9,6 +9,7 @@
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
+#include <cmath>
 
 #include "message.h"
 #include "simulationLog.h"
@@ -170,12 +171,19 @@ SimulationLog BroadcastSimulator<BroadcastPolicy>::run() {
 	for(int i=0; i<(int)msgLatencies.size(); i++) {
 		sumLatencies += msgLatencies[i];
 	}
+	double avgLat = (double)sumLatencies/msgLatencies.size();
+	
+	double sumSqrDiff = 0;
+	for(int i=0; i<(int)msgLatencies.size(); i++) {
+		sumSqrDiff += pow(msgLatencies[i] - avgLat, 2);
+	}
 	
 	log.setAvgThroughput((double)numMessages/round);
-	log.setAvgLatency((double)sumLatencies/msgLatencies.size());
+	log.setAvgLatency(avgLat);
+	log.setStdDevLatency(sqrt((double)sumSqrDiff/msgLatencies.size()));
 	
 	cout << "Avg throughput: " << log.getAvgThroughput() << endl;
-	cout << "Avg latency: " << log.getAvgLatency() << endl;
+	cout << "Avg latency: " << log.getAvgLatency() << " [StdDev: " << log.getStdDevLatency() << "]" << endl;
 	return log;
 }
 

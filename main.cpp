@@ -45,26 +45,28 @@ SimulationLog runSimulator(const char* simType, const char* input) {
 void benchmark() {
 	string simTypes[] = {"TotalOrderBasic", "TotalOrderTree", "TotalOrderPipeline"};
 	string benchs[] = {"input1.cfg", "input2.cfg", "input3.cfg", "input4.cfg", "input5.cfg"};
-	double lat[3][5], tp[3][5];
+	double lat[3][5], tp[3][5], stdDevLat[3][5];
 	int numBenchs = 5;
 
 	for(int i=0; i<3; i++) {
 		for(int j=0; j<numBenchs; j++) {
 			SimulationLog log = runSimulator(simTypes[i].c_str(), benchs[j].c_str());
 			lat[i][j] = log.getAvgLatency();
+			stdDevLat[i][j] = log.getStdDevLatency();
 			tp[i][j] = log.getAvgThroughput();
 		}
 	}
 	
 	for(int i=0; i<3; i++) {
 		printf("%s\n", simTypes[i].c_str());
-		double avgLat = 0, avgTp = 0;
+		double avgLat = 0, avgTp = 0, avgStdDevLat = 0;
 		for(int j=0; j<numBenchs; j++) {
-			printf("%s: [lat = %lf, tp = %lf]\n", benchs[j].c_str(), lat[i][j], tp[i][j]);
+			printf("%s: [lat = %lf +- %lf, tp = %lf]\n", benchs[j].c_str(), lat[i][j], stdDevLat[i][j], tp[i][j]);
 			avgLat += lat[i][j];
+			avgStdDevLat += stdDevLat[i][j];
 			avgTp += tp[i][j];
 		}
-		printf("Avg Lat: %f\n", avgLat/numBenchs);
+		printf("Avg Lat: %f [AvgStdDev: %lf]\n", avgLat/numBenchs, avgStdDevLat/numBenchs);
 		printf("Avg Tp: %f\n", avgTp/numBenchs);
 	}
 }

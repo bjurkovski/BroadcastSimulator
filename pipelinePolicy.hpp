@@ -19,7 +19,7 @@ queue<pair<int, int> > PipelinePolicy::generateMsgDestinations(SimType& sim, int
 	queue< pair<int, int> > msgDest = queue< pair<int, int> >();
 	for(int j=0; j<sim.numProcs-1; j++) {
 		int p = (sender + j + 1) % sim.numProcs;
-		msgDest.push(make_pair(p, -1));
+		msgDest.push(make_pair(p, (p-1) % sim.numProcs));
 	}
 	return msgDest;
 }
