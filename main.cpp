@@ -44,9 +44,10 @@ SimulationLog runSimulator(const char* simType, const char* input) {
 
 void benchmark() {
 	string simTypes[] = {"TotalOrderBasic", "TotalOrderTree", "TotalOrderPipeline"};
-	string benchs[] = {"input1.cfg", "input2.cfg", "input3.cfg", "input4.cfg", "input5.cfg"};
-	double lat[3][5], tp[3][5], stdDevLat[3][5];
-	int numBenchs = 5;
+	string benchs[] = {"input1.cfg", "input2.cfg", "input3.cfg", "input4.cfg", "input5.cfg",
+					   "input6.cfg", "input7.cfg", "input8.cfg", "input9.cfg", "input10.cfg"};
+	double lat[3][10], tp[3][10], stdDevLat[3][10];
+	int numBenchs = 10;
 
 	for(int i=0; i<3; i++) {
 		for(int j=0; j<numBenchs; j++) {
