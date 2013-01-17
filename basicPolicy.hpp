@@ -28,7 +28,7 @@ queue<pair<int, int> > BasicPolicy::generateMsgDestinations(SimType& sim, int se
 
 template <class SimType>
 bool BasicPolicy::broadcast(SimType& sim) {
-	bool hasMessageToSend = false;
+	bool running = false;
 	for(int i=0; i<sim.numProcs; i++) {
 		bool msgInPool = sim.messageInPool(i);
 		if(msgInPool) {
@@ -37,26 +37,21 @@ bool BasicPolicy::broadcast(SimType& sim) {
 		sim.receive(i);
 
 		if(!sim.isSending[i].empty()) {
-			Message m = sim.isSending[i].front();
-			//if(!msgDestinations[m.getId()].empty()) {
+			//Message m = sim.isSending[i].front();
+			Message m = sim.isSending[i].top();
 			if(sim.hasNextDestination(i, m.getId())) {
-				hasMessageToSend = true;
-				//int receiver = msgDestinations[m.getId()].front();
+				running = true;
 				int receiver = sim.getNextDestination(i, m.getId());
 				if(sim.send(i, receiver, m)) {
-					//msgDestinations[m.getId()].pop();
 					sim.removeDestination(m.getId(), receiver);
-					//if(msgDestinations[m.getId()].empty())
 					if(!sim.hasNextDestination(i, m.getId()))
+						//sim.isSending[i].pop_front();
 						sim.isSending[i].pop();
 				}
 			}
 		}
-
-		if(!sim.messagesPool[i].empty())
-			hasMessageToSend = true;
 	}
-	return hasMessageToSend;
+	return running;
 }
 
 #endif

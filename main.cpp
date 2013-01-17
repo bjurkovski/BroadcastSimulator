@@ -42,12 +42,12 @@ SimulationLog runSimulator(const char* simType, const char* input, bool verbose=
 	return log;
 }
 
-#define NUM_BENCHS 19
+#define NUM_BENCHS 15
 void benchmark() {
 	string simTypes[] = {"TotalOrderBasic", "TotalOrderTree", "TotalOrderPipeline"};
-	string benchs[] = {"input1.cfg", "input2.cfg", "input3.cfg", "input4.cfg", "input5.cfg",
-					   "input6.cfg", "input7.cfg", "input8.cfg", "input9.cfg", "input10.cfg",
-					   "input11.cfg", "input12.cfg", "input13.cfg",
+	string benchs[] = {"in_4_singleMsg.cfg", "in_4_singleSender.cfg", "in_4_nSenders.cfg",
+					   "in_5_singleMsg.cfg", "in_5_singleSender.cfg", "in_5_nSenders.cfg",
+					   "in_10_singleMsg.cfg", "in_10_singleSender.cfg", "in_10_nSenders.cfg",
 					   "in_20_singleMsg.cfg", "in_20_singleSender.cfg", "in_20_nSenders.cfg",
 					   "in_50_singleMsg.cfg", "in_50_singleSender.cfg", "in_50_nSenders.cfg"};
 	double lat[3][NUM_BENCHS], tp[3][NUM_BENCHS], stdDevLat[3][NUM_BENCHS];

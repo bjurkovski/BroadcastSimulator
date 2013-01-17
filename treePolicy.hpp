@@ -37,10 +37,11 @@ queue<pair<int, int> > TreePolicy::generateMsgDestinations(SimType& sim, int sen
 
 template <class SimType>
 bool TreePolicy::broadcast(SimType& sim) {
-	bool hasMessageToSend = false;
+	bool running = false;
 	for(int i=0; i<sim.numProcs; i++) {
 		Message msgReceived = sim.receive(i);
 		if(!msgReceived.isNull())
+			//sim.isSending[i].push_back(msgReceived);
 			sim.isSending[i].push(msgReceived);
 
 		bool msgInPool = sim.messageInPool(i);
@@ -49,27 +50,22 @@ bool TreePolicy::broadcast(SimType& sim) {
 		}
 
 		if(!sim.isSending[i].empty())  {
-			Message m = sim.isSending[i].front();
-			//if(msgDestinations[m.getId()].empty()) {
+			//Message m = sim.isSending[i].front();
+			Message m = sim.isSending[i].top();
 			if(!sim.hasNextDestination(i, m.getId())) {
+				//sim.isSending[i].pop_front();
 				sim.isSending[i].pop();
 			}
 			else {
-				hasMessageToSend = true;
-				//int receiver = msgDestinations[m.getId()].front();
+				running = true;
 				int receiver = sim.getNextDestination(i, m.getId());
 				if(sim.send(i, receiver, m)) {
-					//msgDestinations[m.getId()].pop();
 					sim.removeDestination(m.getId(), receiver);
 				}
 			}
 		}
-
-		if(!sim.messagesPool[i].empty()) {
-			hasMessageToSend = true;
-		}
 	}
-	return hasMessageToSend;
+	return running;
 }
 
 #endif

@@ -1,4 +1,4 @@
-for i in [20, 50]:
+for i in [4, 5, 10, 20, 50]:
 	for case in ["singleMsg", "nSenders", "singleSender"]:
 		f = open("in_%d_%s.cfg" % (i, case), "w")
 		f.write(str(i) + "\n")

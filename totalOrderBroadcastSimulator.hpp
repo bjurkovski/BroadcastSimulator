@@ -148,6 +148,17 @@ Message TotalOrderBroadcastSimulator<BroadcastPolicy>::receive(int receiver) {
 			// Process that receives a message (even if it hasn't been delivered yet)
 			// gains the right to help broadcasting it to other processes (this makes
 			// it possible to implement the Tree and Pipeline protocols)
+			/*
+			Message recSendingMsg;
+			if(!this->isSending[receiver].empty())
+				recSendingMsg = this->isSending[receiver].front();
+			if(!this->isSending[receiver].empty() && ((m.time < recSendingMsg.time)
+				|| ((m.time == recSendingMsg.time)
+				&& (m.getCreator()<recSendingMsg.getCreator())))) // if the message must be
+				this->isSending[receiver].push_front(m);  // received before, help the
+			else                                         // process finishing the
+				this->isSending[receiver].push_back(m);  // broadcast with higher priority
+			*/
 			this->isSending[receiver].push(m);
 			if(this->verbose)
 				cout << "Process " << receiver << " broadcasted 'ack " << m.getId() << "' [time " << m.time << "]" << endl; 

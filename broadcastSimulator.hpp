@@ -2,6 +2,7 @@
 #define BROADCAST_SIMULATOR_HPP
 
 #include <queue>
+#include <deque>
 #include <vector>
 #include <string>
 #include <map>
@@ -67,7 +68,8 @@ class BroadcastSimulator : public BroadcastPolicy {
 		void swapBuffers();
 
 		// Each process has a queue of messages to be sent
-		std::vector< std::queue<Message> > isSending;
+		//std::vector< std::deque<Message> > isSending;
+		std::vector<MessageQueue> isSending;
 		// Logical clock per process
 		std::vector<int> procClock;
 		// Check if there's at least one process with a message in the buffer
@@ -143,7 +145,8 @@ void BroadcastSimulator<BroadcastPolicy>::initialize(string configFile) {
 
 	//Message m;
 	for(int i=0; i<numProcs; i++) {
-		isSending.push_back(std::queue<Message>());
+		//isSending.push_back(std::deque<Message>());
+		isSending.push_back(MessageQueue());
 		procClock.push_back(0);
 		for(int j=0; j<2; j++)
 			procBuffer[j].push_back(MessageQueue());
@@ -154,16 +157,22 @@ void BroadcastSimulator<BroadcastPolicy>::initialize(string configFile) {
 
 template <class BroadcastPolicy>
 SimulationLog BroadcastSimulator<BroadcastPolicy>::run() {
-	bool running = true;
+	bool running = false, hasMessageToSend = true;
 	log.initialize(numProcs);
 	numMessages = 0;
 	round = 0;
-	while(running || hasMessageToReceive()) {
+	while(running || hasMessageToSend || hasMessageToReceive()) {
 		if(verbose)
 			std::cout << "** Round " << round << std::endl;
 		log.newRound();
 		initializeRound();
+		
 		running = BroadcastPolicy::broadcast(*this);
+		hasMessageToSend = false;
+		for(int i=0; i<numProcs; i++)
+			if(!messagesPool[i].empty())
+				hasMessageToSend = true;
+
 		round++;
 		swapBuffers();
 	}
@@ -195,9 +204,11 @@ template <class BroadcastPolicy>
 void BroadcastSimulator<BroadcastPolicy>::initializeRound() {
 	for(int proc=0; proc<numProcs; proc++) {
 		while(!isSending[proc].empty()) { 
-			Message m = isSending[proc].front();
+			//Message m = isSending[proc].front();
+			Message m = isSending[proc].top();
 			if(hasNextDestination(proc, m.getId()))
 				break;
+			//else isSending[proc].pop_front();
 			else isSending[proc].pop();
 		} 
 	}
@@ -226,6 +237,7 @@ void BroadcastSimulator<BroadcastPolicy>::sendNewMessage(int proc) {
 		*/
 		msgDestinations[msgId] = BroadcastPolicy::generateMsgDestinations(*this, proc);
 
+		//isSending[proc].push_back(m);
 		isSending[proc].push(m);
 		firstTimeSent.push_back(0);
 		msgLatencies.push_back(0);
