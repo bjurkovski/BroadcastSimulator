@@ -32,7 +32,7 @@ class BroadcastSimulator : public BroadcastPolicy {
 	using BroadcastPolicy::broadcast;
 
 	public:
-		BroadcastSimulator() { }
+		BroadcastSimulator(bool verbose=true) { this->verbose = verbose; }
 		void initialize(std::string configFile);
 		SimulationLog run();
 	protected:
@@ -41,6 +41,7 @@ class BroadcastSimulator : public BroadcastPolicy {
 		int numMessages;
 		int round;
 		SimulationLog log;
+		bool verbose;
 
 		// Method meant to be called at the beginning of each round,
 		// to set everything up and update the processes state
@@ -158,7 +159,8 @@ SimulationLog BroadcastSimulator<BroadcastPolicy>::run() {
 	numMessages = 0;
 	round = 0;
 	while(running || hasMessageToReceive()) {
-		std::cout << "** Round " << round << std::endl;
+		if(verbose)
+			std::cout << "** Round " << round << std::endl;
 		log.newRound();
 		initializeRound();
 		running = BroadcastPolicy::broadcast(*this);
@@ -181,9 +183,11 @@ SimulationLog BroadcastSimulator<BroadcastPolicy>::run() {
 	log.setAvgThroughput((double)numMessages/round);
 	log.setAvgLatency(avgLat);
 	log.setStdDevLatency(sqrt((double)sumSqrDiff/msgLatencies.size()));
-	
-	cout << "Avg throughput: " << log.getAvgThroughput() << endl;
-	cout << "Avg latency: " << log.getAvgLatency() << " [StdDev: " << log.getStdDevLatency() << "]" << endl;
+
+	if(verbose) {
+		cout << "Avg throughput: " << log.getAvgThroughput() << endl;
+		cout << "Avg latency: " << log.getAvgLatency() << " [StdDev: " << log.getStdDevLatency() << "]" << endl;
+	}
 	return log;
 }
 
@@ -211,7 +215,7 @@ template <class BroadcastPolicy>
 void BroadcastSimulator<BroadcastPolicy>::sendNewMessage(int proc) {
 	if(messageInPool(proc)) {
 		int msgId = numMessages;
-		Message m = Message(msgId, proc, proc+'0');
+		Message m = Message(msgId, proc, (proc%10)+'0');
 
 		/*
 		msgDestinations[msgId] = queue< pair<int, int> >();
@@ -312,7 +316,7 @@ bool BroadcastSimulator<BroadcastPolicy>::send(int sender, int receiver, Message
 	for(int i=0; i<numProcs; i++)
 		procClock[i]++;
 
-	if(sender != receiver)
+	if(verbose && (sender != receiver))
 		cout << "Process " << sender << " sent '" << message.getId() << "' to process " << receiver << endl;
 	return true;
 }
@@ -327,11 +331,13 @@ Message BroadcastSimulator<BroadcastPolicy>::receive(int receiver) {
 		procBuffer[currentBuffer][receiver].pop();
 		log.storeReceive(m, receiver);
 		log.storeDeliver(m, receiver);
-		cout << "Process " << receiver << " received '" << m.getId() << "'" << endl;
+		if(verbose)
+			cout << "Process " << receiver << " received '" << m.getId() << "'" << endl;
 		procsToReceive[m.getId()]--;
 		if((procsToReceive[m.getId()]==0) && (msgDestinations[m.getId()].size()==0)) {
 			msgLatencies[m.getId()] = round - firstTimeSent[m.getId()];
-			cout << ">> '" << m.getId() << "' was broadcasted! Latency was " << msgLatencies[m.getId()] << "." << endl;
+			if(verbose)
+				cout << ">> '" << m.getId() << "' was broadcasted! Latency was " << msgLatencies[m.getId()] << "." << endl;
 		}
 		return m;
 	}

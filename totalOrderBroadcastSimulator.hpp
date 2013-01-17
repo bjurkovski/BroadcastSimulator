@@ -6,7 +6,7 @@
 template <class BroadcastPolicy>
 class TotalOrderBroadcastSimulator : public BroadcastSimulator<BroadcastPolicy> {
 	public:
-		TotalOrderBroadcastSimulator() : BroadcastSimulator<BroadcastPolicy>() {
+		TotalOrderBroadcastSimulator(bool verbose=true) : BroadcastSimulator<BroadcastPolicy>(verbose) {
 		}
 
 		void initialize(std::string configFile) {
@@ -108,7 +108,7 @@ bool TotalOrderBroadcastSimulator<BroadcastPolicy>::send(int sender, int receive
 				}
 			}
 
-			if(sender != receiver)
+			if(this->verbose && (sender != receiver))
 				cout << "Process " << sender << " sent '" << message.getId() << "' to process " << receiver << " [time " << message.time << "]" << endl;
 		}
 
@@ -131,7 +131,8 @@ Message TotalOrderBroadcastSimulator<BroadcastPolicy>::receive(int receiver) {
 		this->procClock[receiver] = this->procClock[receiver] < m.time ? m.time + 1 : this->procClock[receiver];
 
 		if(m.content == 'A') {
-			cout << "Process " << receiver << " received 'ack " << m.getId() << "' from " << m.sender << " [time " << m.time << "]" << endl; 
+			if(this->verbose)
+				cout << "Process " << receiver << " received 'ack " << m.getId() << "' from " << m.sender << " [time " << m.time << "]" << endl; 
 			this->procBuffer[this->currentBuffer][receiver].pop();
 			remainingAcks[receiver][m.getId()]--;
 
@@ -148,7 +149,8 @@ Message TotalOrderBroadcastSimulator<BroadcastPolicy>::receive(int receiver) {
 			// gains the right to help broadcasting it to other processes (this makes
 			// it possible to implement the Tree and Pipeline protocols)
 			this->isSending[receiver].push(m);
-			cout << "Process " << receiver << " broadcasted 'ack " << m.getId() << "' [time " << m.time << "]" << endl; 
+			if(this->verbose)
+				cout << "Process " << receiver << " broadcasted 'ack " << m.getId() << "' [time " << m.time << "]" << endl; 
 			m.content = 'A';
 			for(int i=0; i<this->numProcs; i++) {
 				if(i != receiver) send(receiver, i, m);
@@ -183,16 +185,19 @@ template <class BroadcastPolicy>
 Message TotalOrderBroadcastSimulator<BroadcastPolicy>::getReadyMessage(int receiver) {
 	if(!waitingForAcks[receiver].empty()) {
 		Message mAcks = waitingForAcks[receiver].top();
-		cout << "Process " << receiver << " has a message(" << mAcks.getId() << ") waiting for " << remainingAcks[receiver][mAcks.getId()] << " acks" << endl;
+		if(this->verbose)
+			cout << "Process " << receiver << " has a message(" << mAcks.getId() << ") waiting for " << remainingAcks[receiver][mAcks.getId()] << " acks" << endl;
 		if(remainingAcks[receiver][mAcks.getId()] == 0) {
-			cout << "Process " << receiver << " received '" << mAcks.getId() << "'" << endl;
+			if(this->verbose)
+				cout << "Process " << receiver << " received '" << mAcks.getId() << "'" << endl;
 			waitingForAcks[receiver].pop();
 			this->procClock[receiver] = this->procClock[receiver] < mAcks.time ? mAcks.time + 1 : this->procClock[receiver];
 
 			this->procsToReceive[mAcks.getId()]--;
 			if((this->procsToReceive[mAcks.getId()]==0) && (this->msgDestinations[mAcks.getId()].size()==0)) {
 				this->msgLatencies[mAcks.getId()] = this->round - this->firstTimeSent[mAcks.getId()];
-				cout << ">> '" << mAcks.getId() << "' was broadcasted! Latency was " << this->msgLatencies[mAcks.getId()] << "." << endl;
+				if(this->verbose)
+					cout << ">> '" << mAcks.getId() << "' was broadcasted! Latency was " << this->msgLatencies[mAcks.getId()] << "." << endl;
 			}
 
 			return mAcks;
