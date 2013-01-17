@@ -52,7 +52,11 @@ bool TreePolicy::broadcast(SimType& sim) {
 		if(!sim.isSending[i].empty())  {
 			//Message m = sim.isSending[i].front();
 			Message m = sim.isSending[i].top();
-			if(!sim.hasNextDestination(i, m.getId())) {
+			if(m.content == 'A') {
+				if(sim.send(i, -1, m))
+					sim.isSending[i].pop();
+			}
+			else if(!sim.hasNextDestination(i, m.getId())) {
 				//sim.isSending[i].pop_front();
 				sim.isSending[i].pop();
 			}

@@ -39,7 +39,11 @@ bool BasicPolicy::broadcast(SimType& sim) {
 		if(!sim.isSending[i].empty()) {
 			//Message m = sim.isSending[i].front();
 			Message m = sim.isSending[i].top();
-			if(sim.hasNextDestination(i, m.getId())) {
+			if(m.content == 'A') {
+				if(sim.send(i, -1, m))
+					sim.isSending[i].pop();
+			}
+			else if(sim.hasNextDestination(i, m.getId())) {
 				running = true;
 				int receiver = sim.getNextDestination(i, m.getId());
 				if(sim.send(i, receiver, m)) {

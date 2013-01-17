@@ -40,6 +40,8 @@ class TotalOrderBroadcastSimulator : public BroadcastSimulator<BroadcastPolicy> 
 		// to false in the beginning of each round
 		void initializeRound();
 
+		void sendNewMessage(int proc);
+
 		// Overload of the original method: also checks if there's
 		// a message in the 'waitingForAcks' buffer
 		bool hasMessageToReceive();
@@ -76,6 +78,12 @@ void TotalOrderBroadcastSimulator<BroadcastPolicy>::initializeRound() {
 }
 
 template <class BroadcastPolicy>
+void TotalOrderBroadcastSimulator<BroadcastPolicy>::sendNewMessage(int proc) {
+	//if(this->waitingForAcks[proc].empty() && this->isSending[proc].empty())
+		BroadcastSimulator<BroadcastPolicy>::sendNewMessage(proc);
+}
+
+template <class BroadcastPolicy>
 bool TotalOrderBroadcastSimulator<BroadcastPolicy>::send(int sender, int receiver, Message message) {
 	if(sentMsg[sender]) {
 		return false;
@@ -84,8 +92,18 @@ bool TotalOrderBroadcastSimulator<BroadcastPolicy>::send(int sender, int receive
 		message.sender = sender;
 
 		if(message.content == 'A') {
-			this->procBuffer[(this->currentBuffer+1)%2][receiver].push(message);
-			this->log.storeSend(message, receiver);
+			for(int i=0; i<this->numProcs; i++) {
+				if(i != sender) {
+					this->procBuffer[(this->currentBuffer+1)%2][i].push(message);
+					this->log.storeSend(message, i);
+				}
+			}
+			this->procClock[sender]++;
+
+			if(this->verbose) {
+				cout << "Process " << sender << " broadcasted 'ack " << message.getId();
+				cout << "' [time " << message.time << "]" << endl; 
+			}
 		}
 		else {
 			message.time = this->procClock[sender];
@@ -95,6 +113,8 @@ bool TotalOrderBroadcastSimulator<BroadcastPolicy>::send(int sender, int receive
 
 			if((int)this->msgDestinations[message.getId()].size() == this->numProcs - 1) {
 				this->firstTimeSent[message.getId()] = this->round;
+				// The sender includes the message in its waiting list
+				this->updateWaitingForAcksList(sender, message);
 				// The first time we increment this to signalize the sender
 				// also has to deliver this message
 				this->procsToReceive[message.getId()]++; 
@@ -112,6 +132,7 @@ bool TotalOrderBroadcastSimulator<BroadcastPolicy>::send(int sender, int receive
 				cout << "Process " << sender << " sent '" << message.getId() << "' to process " << receiver << " [time " << message.time << "]" << endl;
 		}
 
+		sentMsg[sender] = true;
 		return true;
 	}
 }
@@ -160,14 +181,17 @@ Message TotalOrderBroadcastSimulator<BroadcastPolicy>::receive(int receiver) {
 				this->isSending[receiver].push_back(m);  // broadcast with higher priority
 			*/
 			this->isSending[receiver].push(m);
-			if(this->verbose)
-				cout << "Process " << receiver << " broadcasted 'ack " << m.getId() << "' [time " << m.time << "]" << endl; 
-			m.content = 'A';
-			for(int i=0; i<this->numProcs; i++) {
-				if(i != receiver) send(receiver, i, m);
-			}
-			this->procClock[receiver]++;
-			sentMsg[receiver] = true;
+		 
+			//* Multicasts the ack right now
+			Message mAck = m;
+			mAck.content = 'A';
+			send(receiver, -1, mAck);
+			// */
+			/* Multicasts the ack later...
+			Message mAck = m;
+			mAck.content = 'A';
+			this->isSending[receiver].push(mAck);
+			// */
 
 			updateWaitingForAcksList(receiver, m); 
 			Message msgToReturn = getReadyMessage(receiver); 
@@ -184,6 +208,10 @@ void TotalOrderBroadcastSimulator<BroadcastPolicy>::updateWaitingForAcksList(int
 		Message msg = waitingForAcks[receiver].top();
 		waitingForAcks[receiver].pop();
 		if(m.getId() == msg.getId()) {
+			if(msg.content != 'A') {
+				//cout << "Updating content for " << msg.getId() << " with " << msg.content << endl;
+				m.content = msg.content;
+			}
 			m.time = min(m.time, msg.time);
 		}
 		else bkp.push(msg);
@@ -200,7 +228,7 @@ Message TotalOrderBroadcastSimulator<BroadcastPolicy>::getReadyMessage(int recei
 			cout << "Process " << receiver << " has a message(" << mAcks.getId() << ") waiting for " << remainingAcks[receiver][mAcks.getId()] << " acks" << endl;
 		if(remainingAcks[receiver][mAcks.getId()] == 0) {
 			if(this->verbose)
-				cout << "Process " << receiver << " received '" << mAcks.getId() << "'" << endl;
+				cout << "Process " << receiver << " received '" << mAcks.getId() << "'(" << mAcks.content << ")" << endl;
 			waitingForAcks[receiver].pop();
 			this->procClock[receiver] = this->procClock[receiver] < mAcks.time ? mAcks.time + 1 : this->procClock[receiver];
 

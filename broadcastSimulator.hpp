@@ -206,7 +206,7 @@ void BroadcastSimulator<BroadcastPolicy>::initializeRound() {
 		while(!isSending[proc].empty()) { 
 			//Message m = isSending[proc].front();
 			Message m = isSending[proc].top();
-			if(hasNextDestination(proc, m.getId()))
+			if((m.content=='A') || hasNextDestination(proc, m.getId()))
 				break;
 			//else isSending[proc].pop_front();
 			else isSending[proc].pop();
@@ -319,6 +319,7 @@ bool BroadcastSimulator<BroadcastPolicy>::send(int sender, int receiver, Message
 	message.sender = sender;
 	message.time = procClock[sender];
 	procBuffer[(currentBuffer+1)%2][receiver].push(message);
+
 	log.storeSend(message, receiver);
 
 	if((int)msgDestinations[message.getId()].size() == numProcs - 1)
@@ -330,6 +331,7 @@ bool BroadcastSimulator<BroadcastPolicy>::send(int sender, int receiver, Message
 
 	if(verbose && (sender != receiver))
 		cout << "Process " << sender << " sent '" << message.getId() << "' to process " << receiver << endl;
+
 	return true;
 }
 
