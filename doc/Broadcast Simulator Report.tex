@@ -185,11 +185,11 @@ Basic input1.cfg
 	The desired protocol has the following properties (under the assumptions listed before):
 
 \begin{description}
-	\item[Validity] If a correct process p broadcasts a message m, then p eventually delivers m;
+	\item[Validity] If a correct process \texttt{p} broadcasts a message \texttt{m}, then \texttt{p} eventually delivers \texttt{m};
 	\item[No duplication] No message is delivered more than once;
-	\item[No creation] If a process delivers message m with sender s, then m was previously broadcasted by sender s;
-	\item[Agreement] If a message m is delivered by some correct process, then m is eventually delivered by every correct process;
-	\item[Total Order] If some process delivers message m2 after message m1, then every process delivers m2 only after it has delivered m1.
+	\item[No creation] If a process delivers message \texttt{m} with sender \texttt{s}, then \texttt{m} was previously broadcasted by sender \texttt{s};
+	\item[Agreement] If a message \texttt{m} is delivered by some correct process, then \texttt{m} is eventually delivered by every correct process;
+	\item[Total Order] If some process delivers message \texttt{b} after message \texttt{a}, then every process delivers \texttt{b} only after it has delivered \texttt{a}.
 \end{description}
 
 	The first four properties were already ensured by the base protocol, so the challenge is to extend it to provide the total order property.
