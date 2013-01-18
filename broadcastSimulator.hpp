@@ -55,7 +55,7 @@ class BroadcastSimulator : public BroadcastPolicy {
 		bool messageInPool(int proc);
 		// Puts the first message of the pool in the process' send queue
 		// and fills a list of destinations waiting for this message
-		void sendNewMessage(int proc); 
+		virtual void sendNewMessage(int proc); 
 
 		// Each process has two buffers to receive a message: one to
 		// represent the current buffer and one of future messages

@@ -79,7 +79,7 @@ void TotalOrderBroadcastSimulator<BroadcastPolicy>::initializeRound() {
 
 template <class BroadcastPolicy>
 void TotalOrderBroadcastSimulator<BroadcastPolicy>::sendNewMessage(int proc) {
-	//if(this->waitingForAcks[proc].empty() && this->isSending[proc].empty())
+	if(this->waitingForAcks[proc].empty() && this->isSending[proc].empty())
 		BroadcastSimulator<BroadcastPolicy>::sendNewMessage(proc);
 }
 
@@ -182,12 +182,12 @@ Message TotalOrderBroadcastSimulator<BroadcastPolicy>::receive(int receiver) {
 			*/
 			this->isSending[receiver].push(m);
 		 
-			//* Multicasts the ack right now
+			/* Multicasts the ack right now
 			Message mAck = m;
 			mAck.content = 'A';
 			send(receiver, -1, mAck);
 			// */
-			/* Multicasts the ack later...
+			//* Multicasts the ack later...
 			Message mAck = m;
 			mAck.content = 'A';
 			this->isSending[receiver].push(mAck);
