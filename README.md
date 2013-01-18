@@ -1,5 +1,16 @@
 BroadcastSimulator
 ==================
+Compilling
+----------
+* Just type: make
+
+Running
+-------
+* Normally:
+	* Configure the simulation.cfg file (read the report for instructions)
+	* Type: ./sim
+* Benchmark mode:
+	* Type: ./sim -b
 
 Optional Dependencies
 ---------------------
