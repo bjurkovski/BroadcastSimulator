@@ -9,7 +9,7 @@ class TotalOrderBroadcastSimulator : public BroadcastSimulator<BroadcastPolicy> 
 		TotalOrderBroadcastSimulator(bool verbose=true) : BroadcastSimulator<BroadcastPolicy>(verbose) {
 		}
 
-		void initialize(std::string configFile) {
+		void initialize(std::string configFile, bool optimizeLatency=true) {
 			BroadcastSimulator<BroadcastPolicy>::initialize(configFile);
 			remainingAcks.clear();
 			waitingForAcks.clear();
@@ -19,8 +19,11 @@ class TotalOrderBroadcastSimulator : public BroadcastSimulator<BroadcastPolicy> 
 				waitingForAcks.push_back(MessageQueue());
 				sentMsg.push_back(false);
 			}
+			this->optimizeLatency = optimizeLatency;
 		}
 	protected:
+		bool optimizeLatency;
+
 		// For each process, a table which contains the number of
 		// acks this process is still waiting to deliver a message M
 		std::vector< std::map<int, int> > remainingAcks;
@@ -40,6 +43,10 @@ class TotalOrderBroadcastSimulator : public BroadcastSimulator<BroadcastPolicy> 
 		// to false in the beginning of each round
 		void initializeRound();
 
+		// Overload of the original method: if the simulator is set to
+		// optimize latency and the process wants to send a new message,
+		// it first verifies if it doesn't need to deliver any other message
+		// before (to avoid contention due to the acks)
 		void sendNewMessage(int proc);
 
 		// Overload of the original method: also checks if there's
@@ -79,7 +86,8 @@ void TotalOrderBroadcastSimulator<BroadcastPolicy>::initializeRound() {
 
 template <class BroadcastPolicy>
 void TotalOrderBroadcastSimulator<BroadcastPolicy>::sendNewMessage(int proc) {
-	if(this->waitingForAcks[proc].empty() && this->isSending[proc].empty())
+	if(!optimizeLatency 
+		|| (this->waitingForAcks[proc].empty() && this->isSending[proc].empty()))
 		BroadcastSimulator<BroadcastPolicy>::sendNewMessage(proc);
 }
 
@@ -169,29 +177,20 @@ Message TotalOrderBroadcastSimulator<BroadcastPolicy>::receive(int receiver) {
 			// Process that receives a message (even if it hasn't been delivered yet)
 			// gains the right to help broadcasting it to other processes (this makes
 			// it possible to implement the Tree and Pipeline protocols)
-			/*
-			Message recSendingMsg;
-			if(!this->isSending[receiver].empty())
-				recSendingMsg = this->isSending[receiver].front();
-			if(!this->isSending[receiver].empty() && ((m.time < recSendingMsg.time)
-				|| ((m.time == recSendingMsg.time)
-				&& (m.getCreator()<recSendingMsg.getCreator())))) // if the message must be
-				this->isSending[receiver].push_front(m);  // received before, help the
-			else                                         // process finishing the
-				this->isSending[receiver].push_back(m);  // broadcast with higher priority
-			*/
 			this->isSending[receiver].push(m);
 		 
-			/* Multicasts the ack right now
-			Message mAck = m;
-			mAck.content = 'A';
-			send(receiver, -1, mAck);
-			// */
-			//* Multicasts the ack later...
-			Message mAck = m;
-			mAck.content = 'A';
-			this->isSending[receiver].push(mAck);
-			// */
+			if(optimizeLatency) {
+				// Multicasts the ack later...
+				Message mAck = m;
+				mAck.content = 'A';
+				this->isSending[receiver].push(mAck);
+			}
+			else {
+				// Multicasts the ack right now
+				Message mAck = m;
+				mAck.content = 'A';
+				send(receiver, -1, mAck);
+			}
 
 			updateWaitingForAcksList(receiver, m); 
 			Message msgToReturn = getReadyMessage(receiver); 
