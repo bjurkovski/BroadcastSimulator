@@ -77,14 +77,14 @@
 
 \subsection{Usage}
 \label{subsec:usage}
-	To execute the simulator, the first step is to configure the \textit{simulation.cfg} file. This file is composed by a line containing an integer \texttt{N} representing the number of simulations to be executed. After  this line there are \texttt{N} lines containing two strings each. The first string represents the kind of broadcast that will be executed. The options are \texttt{Basic}, \texttt{Tree}, \texttt{Pipeline} (total order \textbf{is not ensured} for these three policies), \texttt{TotalOrderBasic}, \texttt{TotalOrderTree} and \texttt{TotalOrderPipeline} (with the total order property). The second string contains the name of the messages configuration file to be used in the simulation (this file must be placed in the \textit{input} directory). A sample file would look like:
+	To execute the simulator, the first step is to configure the \textit{simulation.cfg} file. This file is composed by a line containing an integer \texttt{N} representing the number of simulations to be executed and a char \texttt{V} representing the algorithm version to run (\textit{'l'} for the latency-optimized version and \textit{'o'} for the original). After  this line there are \texttt{N} lines containing two strings each. The first string represents the kind of broadcast that will be executed. The options are \texttt{Basic}, \texttt{Tree}, \texttt{Pipeline} (total order \textbf{is not ensured} for these three policies), \texttt{TotalOrderBasic}, \texttt{TotalOrderTree} and \texttt{TotalOrderPipeline} (with the total order property). The second string contains the name of the messages configuration file to be used in the simulation (this file must be placed in the \textit{input} directory). A sample file would look like:
 
 \begin{file}
 \begin{verbatim}
-1
+1 l
 Basic input1.cfg
 \end{verbatim}
-\caption{Example of a \textit{simulation.cfg}. The \textit{input1.cfg} file is executed using the Basic protocol.}
+\caption{Example of a \textit{simulation.cfg}. The \textit{input1.cfg} file is executed using the latency-optimized Basic protocol.}
 \end{file}
 
 	The messages configuration file tells how many processes will be simulated and the messages each one of them will send over the time. The first line contains an integer \texttt{P} indicating the number of processes in the system. The next \texttt{P} lines (each one representing a process) start with an integer \texttt{M} indicating the number of messages the corresponding process will send, followed by \texttt{M} integers indicating the round each message will be sent (this list of rounds must be increasing). A sample file would look like:
